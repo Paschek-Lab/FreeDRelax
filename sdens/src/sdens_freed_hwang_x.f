@@ -11,8 +11,8 @@ c
       integer i, it, n, nt, narg
       integer relax, domhz
       
-      double precision dd, D, R, b, xmin0, xmin
-      double precision pi, freed, dt
+      double precision dd, D, R, b, xmin0, xmin, sx
+      double precision pi, freed, xfreed, dt
       double precision o, oout, ou, u, omegau, t, tmin, tmax, norm0, norm
       double precision scale, jomega, jomega2, o2, ou2, fac
       double precision j0, fm, tauadd, deltaj, deltaj2, rho
@@ -23,6 +23,7 @@ c
       logical getline
 c-----
 
+      sx=1.0d0
       rho=1.0d0
       scale=1.0d0
       relax=0
@@ -67,7 +68,10 @@ c      print*,'#',nt
          endif
          if (arg(i).eq.'-scale') then
             read(arg(i+1),*) scale
-         endif   
+         endif
+         if (arg(i).eq.'-sx') then
+            read(arg(i+1),*) sx
+         endif
          if (arg(i).eq.'-rho') then
             read(arg(i+1),*) rho
          endif
@@ -115,8 +119,8 @@ c     fm=fm*2*4096/(4.96735e-9)**3
 
 
       dt=time(2)-time(1)
-      j0=(4.0d0/9.0d0*dd**2/D)
-     
+      j0=(4.0d0/9.0d0*dd**2/D)*sx**(1.0/3.0)
+
       deltaj=0.0d0
       do it=1,nt-1
          deltaj=deltaj+
@@ -138,7 +142,12 @@ c     fm=fm*2*4096/(4.96735e-9)**3
      .        deltaj,
      .        j0
       endif
-            
+      
+c      print*, 0.0, j0, j0
+c      print*, 0.0, 4.0d0/9.0d0*dd**2/D
+
+
+      
       do i=1,n
          o=omega(i)
          o2=omega(i)*2.0d0
@@ -154,8 +163,8 @@ c     fm=fm*2*4096/(4.96735e-9)**3
          endif
          
          if (relax.eq.1) then
-            jomega=freed(ou,D,dd,xmin0,norm0)
-            jomega2=freed(ou2,D,dd,xmin0,norm0)
+            jomega=xfreed(ou,sx,D,dd,xmin0,norm0)
+            jomega2=xfreed(ou2,sx,D,dd,xmin0,norm0)
 
             print*, oout,
      .           (jomega+deltaj +4.0d0*(jomega2+deltaj2))*fac/5.0d0,
@@ -164,7 +173,7 @@ c     fm=fm*2*4096/(4.96735e-9)**3
      .           j0*fac-fm*sqrt(o*1.0d12)
             
          else
-            jomega=freed(ou,D,dd,xmin0,norm0)
+            jomega=xfreed(ou,sx,D,dd,xmin0,norm0)
             print*, oout, jomega+deltaj, jomega, deltaj,
      .           j0-sqrt(2.0d0)/6.0d0*dd**3/sqrt(D**3)*sqrt(o)
             
@@ -181,7 +190,7 @@ c     fm=fm*2*4096/(4.96735e-9)**3
       integer it, nt , nmax
       double precision time(nmax), deltag(nmax), dt, o, scale
       double precision deltaj, deltaj2
-      
+
       deltaj=0.0d0
       deltaj2=0.0d0
       
@@ -195,39 +204,40 @@ c     fm=fm*2*4096/(4.96735e-9)**3
      .        deltag(it+1)*cos(2.0d0*time(it+1)*o) )
      .        * (time(it+1)-time(it))
       enddo
-      
+
       deltaj=deltaj*scale
       deltaj2=deltaj2*scale           
 
       end
       
 
-      double precision function freed (ou, D, dd, xmin,norm)
+      double precision function xfreed (ou, sx, D, dd, xmin,norm)
 
       implicit none
       
       integer nmax, i
-      double precision xmax, xmin, dx, x, x2, t
+      double precision xmax, xmin, dx, x, x2, t, sx, ous
       double precision D, dd, u, ou, b, c, sum, pi, norm
 
       nmax=1000000
 
       pi=4.0d0*datan(1.0d0)
 
-      xmax=10.0d0/sqrt(ou)
+      ous=ou/sx**(2.0/3.0)
+      
+      xmax=10.0d0/sqrt(ous)
       dx=xmax/dble(nmax)
-
+     
       sum=0.0d0
       do i=1,nmax
          x=xmin+dble(i)*dx
          x2=x*x
          b=1.0d0/(81.0d0+9.0d0*x2-2.0d0*x2**2 + x2**3)
-         c=1.0d0/(1.0d0+ou**2/(x2*x2))
+         c=1.0d0/(1.0d0+ous**2/(x2*x2))
          
          sum=sum+b*c
       enddo
-      freed=sum*dx/norm*dd**2/D
-
+      xfreed=sum*dx/norm*dd**2/D*sx**(1.0/3.0)
       end
 
 

@@ -10,10 +10,10 @@ c
       
       integer i, n, narg
       double precision dd, D, R, b, xmin0, xmin 
-      double precision pi, freed
+      double precision pi, freed, xfreed
       double precision u, t, tmin, tmax, dt, norm0, norm
-      double precision scale, g0, g1, t_trust
-      double precision sfac
+      double precision scale, g0, g1, g0x, t_trust
+      double precision sfac, sx
       
       double precision time(nmax), g2(nmax)
       character*256  arg(nargmax)
@@ -21,8 +21,10 @@ c
       logical full
 c-----
 
+      sx=1.0d0
       full=.false.
-      sfac=dsqrt(2.0d0*pi)
+c     sfac=dsqrt(2.0d0*pi)
+      sfac=2.53d0
 
       narg = 0
       do i=1,nargmax
@@ -47,6 +49,9 @@ c-----
          if (arg(i).eq.'-sfac') then
             read(arg(i+1),*) sfac
          endif
+         if (arg(i).eq.'-sx') then
+            read(arg(i+1),*) sx
+         endif         
          if (arg(i).eq.'-full') then
             full=.true.
          endif    
@@ -72,23 +77,25 @@ c     xmin=dsqrt(2.0d0*pi)*dd/R
 
       t_trust=R**2/(D*2.0d0*pi)
       
-      print*, 0.0d0, 1.0d0, 1.0d0, 1.0d0
+      print*, 0.0d0, 1.0d0, 1.0d0, 1.0d0, sx
       do i=1,n
          t=time(i)
          u=D*t/dd**2
          if (full) then
             if (t.gt.0.0d0) then
+               g0x = xfreed(t,sx,D,dd,xmin0,norm0)               
                g0= freed(t,D,dd,xmin0,norm0)
                g1= freed(t,D,dd,xmin,norm)
                scale=g0/g1
-               print*, t, g2(i)*scale, g0, scale
+               print*, t, g2(i)*scale, g0, scale, g0x
             endif
          else
             if (t.gt.0.0d0.and.t.lt.t_trust) then
+               g0x = xfreed(t,sx,D,dd,xmin0,norm0)                              
                g0= freed(t,D,dd,xmin0,norm0)
                g1= freed(t,D,dd,xmin,norm)
                scale=g0/g1
-               print*, t, g2(i)*scale, g0, scale
+               print*, t, g2(i)*scale, g0, scale, g0x
             endif
          endif
       enddo
@@ -175,4 +182,33 @@ c     freed=sum*dx/(3.1415926/54.0)
       return
  100  continue
       getline=.false.
+      end
+
+      double precision function xfreed (t, sx, D, dd, xmin,norm)
+
+      implicit none
+      
+      integer nmax, i
+      double precision xmax, xmin, dx, x, x2, t, sx
+      double precision D, dd, u, b, sum, pi, norm
+
+      nmax=100000
+
+      pi=4.0d0*datan(1.0d0)
+      
+      u=D*t/dd**2*sx**(2.0/3.0)
+      xmax=40.0d0/sqrt(u)
+      dx=xmax/dble(nmax)
+
+     
+      sum=0.0d0
+      do i=1,nmax
+         x=xmin+dble(i)*dx
+         x2=x*x
+         b=x2/(81.0d0+9.0d0*x2-2.0d0*x2**2 + x2**3)
+
+         sum=sum+b*dexp(-x2*u)
+      enddo
+
+      xfreed=sum*dx/norm*sx
       end

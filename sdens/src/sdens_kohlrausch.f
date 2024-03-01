@@ -16,6 +16,7 @@ c
       double precision o, oout, u, omegau, t, tmin, tmax, norm0, norm
       double precision scale, jomega, jomega2, o2, ou2, fac
       double precision j0, fm, tauadd, deltaj, deltaj2, rho
+      double precision gamma
       
       double precision omega(nmax), time(nmax), deltag(nmax)
       character*256  arg(nargmax)
@@ -26,8 +27,7 @@ c-----
       scale=1.0d0
       relax=0
       domhz=0
-
-
+      gamma=267.5153151
       
       open(10,file='diff.dat')
       do i=1,nmax
@@ -46,6 +46,12 @@ c      print*,'#',nt
       enddo
 
       do i=1,narg
+         if (arg(i).eq.'-1H') then
+            gamma=267.5153151
+         endif
+         if (arg(i).eq.'-19F') then
+            gamma=251.815
+         endif      
          if (arg(i).eq.'-A') then
             read(arg(i+1),*) Ak
          endif
@@ -64,9 +70,16 @@ c      print*,'#',nt
          if (arg(i).eq.'-mhz') then
             domhz=1
          endif
-         if (arg(i).eq.'-tmax') then
-            read(arg(i+1),*) tmax
-         endif          
+c         if (arg(i).eq.'-tmax') then
+c            read(arg(i+1),*) tmax
+c         endif
+         if (arg(i).eq.'-ntmax') then
+            read(arg(i+1),*) ntmax
+         endif
+         if (arg(i).eq.'-dt') then
+            read(arg(i+1),*) dt
+         endif         
+         
       enddo
 
       n=0
@@ -83,7 +96,9 @@ c      print*,'#',nt
 
 
       fac=2.0d0
-      fac=fac*(267.5153151e6)**4
+c     fac=fac*(267.5153151e6)**4
+      fac=fac*(gamma*1.0e6)**4
+
       fac=fac*(6.62607015e-34/(2*pi))**2
       fac=fac*1.0d0/2.0d0*(3.0d0/2.0d0)
       fac=fac*(1.25663706212e-6/(4.0d0*pi))**2
@@ -92,8 +107,8 @@ c      print*,'#',nt
 
 
 
-      dt=time(2)-time(1)
-      ntmax=int(tmax/dt)
+c      dt=time(2)-time(1)
+c      ntmax=int(tmax/dt)
 
       j0=0.5
       do i=1,ntmax-1
@@ -103,12 +118,12 @@ c      print*,'#',nt
       j0=j0*dt
 
       deltaj=0.0d0
-      deltaj=deltaj+0.5*deltag(1)
-      deltaj=deltaj+0.5*deltag(nt)
+      deltaj=deltaj+0.5*deltag(1)*(time(2)-time(1))
+      deltaj=deltaj+0.5*deltag(nt)*(time(nt)-time(nt-1))
       do it=2,nt-1
-         deltaj=deltaj+deltag(it)
+         deltaj=deltaj+deltag(it)*(time(it+1)-time(it))
       enddo
-      deltaj=deltaj*dt
+c      deltaj=deltaj*dt
 
       if (relax.eq.1) then
          print*, 0.0 ,
@@ -180,20 +195,23 @@ c      print*,'#',nt
       double precision deltaj, deltaj2
       
       deltaj=0.0d0
-      deltaj=deltaj+0.5*(deltag(1)*cos(time(1)*o))
-      deltaj=deltaj+0.5*(deltag(nt)*cos(time(nt)*o))
+      deltaj=deltaj+0.5*(deltag(1)*cos(time(1)*o))*(time(2)-time(1))
+      deltaj=deltaj+0.5*(deltag(nt)*cos(time(nt)*o))*(time(2)-time(1))
 
       deltaj2=0.0d0
       deltaj2=deltaj2+0.5*(deltag(1)*cos(2.0d0*time(1)*o))
-      deltaj2=deltaj2+0.5*(deltag(nt)*cos(2.0d0*time(nt)*o))         
+     .     * (time(2)-time(1))
+      deltaj2=deltaj2+0.5*(deltag(nt)*cos(2.0d0*time(nt)*o))
+     .     * (time(2)-time(1))
 
       do it=2,nt-1
-         deltaj=deltaj+deltag(it)*cos(time(it)*o)
+         deltaj=deltaj+deltag(it)*cos(time(it)*o)*(time(it+1)-time(it))
          deltaj2=deltaj2+deltag(it)*cos(2.0d0*time(it)*o)
+     .        * (time(it+1)-time(it))
       enddo
       
-      deltaj=deltaj*dt
-      deltaj2=deltaj2*dt     
+c      deltaj=deltaj*dt
+c      deltaj2=deltaj2*dt     
 
       end
       
