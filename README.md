@@ -8,6 +8,7 @@ The repository is structured as follows:
 * `rwmc`: contains the source codes for performing random walker Monte Carlo simulations including examples and Hwang-Freed scaling for correcting the effect of a limited sampling cutoff and periodic boundary conditions.
   
 * `sdens`: contains the code for computing the intra- and intermolecular relaxation rates including examples.
-
-
+  
+* R1_R2_comb : contain the codes and examples to calculate the longitudinal (R1) and transverse (R2) relaxation rates.
+  
 For questions, please contact [the authors](mailto:dietmar.paschek@uni-rostock.de)
